@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title></title>
+		<style>
+			*{margin:0;padding:0;text-decoration: none;}
+			a{color:#000}
+			h3{height:50px;width:100%;line-height:50px}
+			span{color:red}
+			em{font-style:normal}
+		    ul{list-style:none;}
+		    ul li{border-bottom:1px solid #ccc;padding:5px 0;width:500px;transition: all 1s;}
+		    #app{width:500px;margin:0 auto;}
+			.delete{float:right;display:inline-block;background:red;color:#fff;border-radius:2px;padding:1px 3px;}
+			.list{height:43px;}
+			.page{padding:8px 0px;}
+			.doNot{color:orange;margin-right:140px;}
+			.active em{text-decoration: line-through;}
+			.active1{border:1px solid #000;display:inline-block;}
+			.list-enter,.list-leave-to{opacity: 0;transform:translateX(-200px)}
+			
+		</style>
+		<script src="vue.js"></script>
+	</head>
+	<body>
+		<div id="app">
+			<h3>添加任务</h3>
+			<input type="text" placeholder="学习任务" v-model="newTask" @keyup.enter="addTask" style="height:44px;line-height:44px;width:100%"/>
+			<div class="page">
+				<span class="doNot">{{noCompleted}}个任务未完成</span>
+			
+					<a v-for="item1 in className" :href="item1.hashUrl" :class="{active1:item1.isSelect}" @click="selected(item1)">{{item1.sname}}</a>
+				
+			</div>
+				<transition-group name="list" tag="ul">
+				<p class="list">任务列表:</p>
+				<li v-for='item in filterArr' :class={active:item.isComplete} :key="item">
+					<div class="normal" v-if="editingItem !== item">
+						<input type="checkbox" @click="noComplete(item)" v-model="item.isComplete"/>
+						<em @dblclick="editTask(item)">{{item.taskName}}</em> 
+					    <span class="delete" @click="deleteTask(item)">删除任务</span>
+					</div>
+					<div class="enditing" v-show="editingItem===item">
+						<input type="text" @blur="editOk" v-focus="true"  @keyup.esc="cancleEdit(item)" @keyup.enter="editOk" v-model="item.taskName" style="height:30px;line-height:30px;width:100%"/>
+					</div>
+					
+				</li>
+			</transition-group>
+			<p style="font-size:12px;color:red">温馨小提示：按ESC可以退出编辑，按ENTER可以保存编辑</p>
+		</div>
+	</body>
+	<script>
+	var store={
+		save (key,value){
+          localStorage.setItem(key,JSON.stringify(value));
+		},
+		getItem(key){
+			return JSON.parse(localStorage.getItem(key))||[];
+		}
+	}
+	var task=store.getItem('narenhua');
+	var className=[{
+		sname:'所有任务',
+		hashUrl:'#all',
+		isSelect:false
+	},{
+		sname:'未完成的任务',
+		hashUrl:'#undefined',
+		isSelect:false
+	},{
+		sname:'完成的任务',
+		hashUrl:'#complete',
+		isSelect:false
+	}]
+	var vue=new Vue({
+		el:'#app',
+		data:{
+			newTask:'',
+			task,
+			editingItem:{},
+			beforeEdit:'',
+			nowHash:'all',
+			className,
+			isSelect:false
+		},watch:{
+			task:{
+				 handler: function () {
+				   store.save("narenhua",this.task);
+				},
+                 deep: true
+			}
+		},directives:{
+			focus: {
+               // 指令的定义---
+                 update: function (el) {
+                 	el.focus();
+                 }
+        }
+		},
+		computed:{
+			 noCompleted(){
+            	return this.task.filter(function (v){
+            		return v.isComplete==false;
+            	}).length
+            },
+			filterArr(){
+				if(this.nowHash==='all'){
+					return this.task;
+				}else if(this.nowHash==='undefined'){
+					return this.task.filter(function (v){
+						return v.isComplete==false;
+					})
+				}else if(this.nowHash==='complete'){
+					return this.task.filter(function (v){
+						return v.isComplete==true;
+					})
+				}else{
+					return this.task;
+				}
+			}
+		},
+		methods:{
+			addTask(){
+				if(this.newTak !==''){
+					this.task.push({
+						taskName:this.newTask,
+						isComplete:false
+					});
+				}
+				this.newTask='';
+			},
+			deleteTask(item){
+				var index = this.task.indexOf(item);
+				this.task.splice(index,1);
+			},
+			editTask(item){
+				this.beforeEdit=item.taskName;
+				this.editingItem=item;
+			},editOk(){
+				this.editingItem={};
+			},
+			cancleEdit(item){
+				item.taskName=this.beforeEdit;
+				this.editingItem={};
+			},noComplete(item){
+				item.isComplete=!item.isComplete;
+			},
+			selected(item1){
+				className.forEach(function (v){
+					v.isSelect=false;
+				});
+					item1.isSelect=true;
+			}
+			}
+			});
+	start();
+	function start(){
+			var vm=window.location.hash.slice(1);
+			vue.nowHash=vm;
+			if(vm=="all"){
+				className[0].isSelect=true;
+			}else if(vm=="undefined"){
+				className[1].isSelect=true;
+			}else{
+				className[2].isSelect=true;
+			}
+	}
+	window.addEventListener("hashchange",start)
+</script>
+
+</html>
